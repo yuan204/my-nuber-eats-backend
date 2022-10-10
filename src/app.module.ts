@@ -13,22 +13,25 @@ import { JwtModule } from './jwt/jwt.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtMiddleware } from './jwt/jwt.middleware';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: process.env.NODE_ENV === 'development' ? '.env.development' : '.env.test',
+      envFilePath:
+        process.env.NODE_ENV === 'development'
+          ? '.env.development'
+          : '.env.test',
       ignoreEnvFile: process.env.NODE_ENV === 'production',
       validationSchema: Joi.object({
         NODE_ENV: Joi.string()
-          .valid('development', 'production', 'test').required(),
+          .valid('development', 'production', 'test')
+          .required(),
         DATABASE_HOST: Joi.string().required(),
         DATABASE_PORT: Joi.string().required(),
         DATABASE_NAME: Joi.string().required(),
         DATABASE_USER: Joi.string().required(),
         DATABASE_PASSWORD: Joi.string().required(),
-        SERCERT_KEY:Joi.string().required(),
+        SERCERT_KEY: Joi.string().required(),
       }),
     }),
     TypeOrmModule.forRoot({
@@ -40,15 +43,15 @@ import { JwtMiddleware } from './jwt/jwt.middleware';
       password: process.env.DATABASE_PASSWORD,
       synchronize: true,
       logging: true,
-      autoLoadEntities: true
+      autoLoadEntities: true,
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
-      context: ({ req }) => ({user: req.user})
+      context: ({ req }) => ({ user: req.user }),
     }),
     JwtModule.forRoot({
-      privateKey: process.env.SERCERT_KEY
+      privateKey: process.env.SERCERT_KEY,
     }),
     RestaurantsModule,
     UsersModule,
@@ -59,8 +62,8 @@ import { JwtMiddleware } from './jwt/jwt.middleware';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule implements NestModule { 
+export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(JwtMiddleware).forRoutes('*')
+    consumer.apply(JwtMiddleware).forRoutes('*');
   }
 }
