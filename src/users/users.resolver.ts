@@ -6,6 +6,7 @@ import { CreateUserDto } from './dtos/create-user.dto';
 import { LoginOutputDto } from './dtos/login-output.dto';
 import { loginDto } from './dtos/login.dto';
 import { UpdateUserProfileInput, UserProfileInput } from './dtos/user-profile.dto';
+import { VerifyEmailInput } from './dtos/verify-email.dto';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
 
@@ -40,6 +41,11 @@ export class UsersResolver {
     @UseGuards(AuthGuard)
     editUserProfile(@Args() updateUserProfileDto: UpdateUserProfileInput ) {
         return this.usersService.update(updateUserProfileDto)
+    }
+
+    @Mutation(returns => User)
+    verifyEmail(@Args('input') {code}: VerifyEmailInput) {
+        return this.usersService.verifyEmail(code)
     }
     
     

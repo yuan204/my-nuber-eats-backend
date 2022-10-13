@@ -12,6 +12,7 @@ import { CommonModule } from './common/common.module';
 import { JwtModule } from './jwt/jwt.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtMiddleware } from './jwt/jwt.middleware';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -53,11 +54,17 @@ import { JwtMiddleware } from './jwt/jwt.middleware';
     JwtModule.forRoot({
       privateKey: process.env.SERCERT_KEY,
     }),
+    MailModule.forRoot({
+      domain: process.env.EMAIL_DOMAIN,
+      from: process.env.EMAIL_FROM,
+      apiKey: process.env.EMAIL_API_KEY
+    }),
     RestaurantsModule,
     UsersModule,
     CommonModule,
     JwtModule,
     AuthModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

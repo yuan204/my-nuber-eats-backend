@@ -1,11 +1,12 @@
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
+    BadRequestException,
+    Injectable,
+    NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { JwtService } from 'src/jwt/jwt.service';
+import { MailService } from 'src/mail/mail.service';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { LoginOutputDto } from './dtos/login-output.dto';
@@ -16,77 +17,93 @@ import { Verification } from './entities/verification.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User) private readonly usersRep: Repository<User>,
-    @InjectRepository(Verification)
-    private readonly verificationRep: Repository<Verification>,
-    private readonly jwtService: JwtService,
-  ) {}
 
-  async findById(id: number) {
-    console.log(typeof id);
-    return this.usersRep.findOneBy({ id });
-  }
+    constructor(
+        @InjectRepository(User) private readonly usersRep: Repository<User>,
+        @InjectRepository(Verification)
+        private readonly verificationRep: Repository<Verification>,
+        private readonly jwtService: JwtService,
+        private readonly mailService: MailService
+    ) { }
 
-  async create(createUserDto: CreateUserDto) {
-    const { email } = createUserDto;
-    const user = await this.usersRep.findOneBy({ email });
-    if (user) {
-      throw new BadRequestException('email is in used');
+    async findById(id: number) {
+        console.log(typeof id);
+        return this.usersRep.findOneBy({ id });
     }
 
-    const createUser = await this.usersRep.save(
-      this.usersRep.create(createUserDto),
-    );
+    async create(createUserDto: CreateUserDto) {
+        const { email } = createUserDto;
+        const user = await this.usersRep.findOneBy({ email });
+        if (user) {
+            throw new BadRequestException('email is in used');
+        }
 
-    await this.verificationRep.save(
-      this.verificationRep.create({ user: createUser }),
-    );
+        const createUser = await this.usersRep.save(
+            this.usersRep.create(createUserDto),
+        );
 
-    return createUser;
-  }
+        const verification =  await this.verificationRep.save(
+            this.verificationRep.create({ user: createUser }),
+        );
 
-  async login({ email, password }: loginDto): Promise<LoginOutputDto> {
-    const user = await this.usersRep.findOneBy({ email });
-    if (!user) {
-      throw new BadRequestException('not find email');
+        
+        this.mailService.sendEmail(createUser.email, verification.code)
+
+        return createUser;
     }
 
-    const isValid = await user.validatePassword(password);
-    if (!isValid) {
-      throw new BadRequestException('wrong password');
+    async login({ email, password }: loginDto): Promise<LoginOutputDto> {
+        const user = await this.usersRep.findOneBy({ email });
+        if (!user) {
+            throw new BadRequestException('not find email');
+        }
+
+        const isValid = await user.validatePassword(password);
+        if (!isValid) {
+            throw new BadRequestException('wrong password');
+        }
+
+        const token = this.jwtService.sign({ sub: user.id });
+        const result = { token, ...user } as LoginOutputDto;
+        return result;
     }
 
-    const token = this.jwtService.sign({ sub: user.id });
-    const result = { token, ...user } as LoginOutputDto;
-    return result;
-  }
+    async update({ userId, data }: UpdateUserProfileInput) {
+        const user = await this.usersRep.preload({
+            id: userId,
+            ...data,
+        });
 
-  async update({ userId, data }: UpdateUserProfileInput) {
-    const user = await this.usersRep.preload({
-      id: userId,
-      ...data,
-    });
+        if (!user) {
+            throw new NotFoundException('not found user');
+        }
+
+        const updatedUser = await this.usersRep.save(user);
 
 
-    
-
-    if (!user) {
-      throw new NotFoundException('not found user');
+        return updatedUser;
     }
 
 
-  
-
-      
-
-
-    
-    
-
-    const updatedUser = await this.usersRep.save(user);
+    async verifyEmail(code: string) {
+        const verification = await this.verificationRep.findOne({
+            where: { code },
+            relations: {
+                'user': true
+            }
+        })
 
 
-    return updatedUser;
-  }
+        if (!verification) {
+            throw new NotFoundException('not found verifyication')
+        }
+
+        const { user } = verification
+        user.verifyed = true
+        await this.verificationRep.remove(verification)
+        return this.usersRep.save(user)
+
+
+
+    }
 }

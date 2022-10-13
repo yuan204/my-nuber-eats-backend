@@ -1,5 +1,5 @@
 import { DynamicModule, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { CONFIG_OPTIONS } from './jwt.constants';
+import { CONFIG_OPTIONS } from '../common/common.constants';
 import { JwtModuleOptions } from './jwt.interfaces';
 import { JwtMiddleware } from './jwt.middleware';
 import { JwtService } from './jwt.service';
