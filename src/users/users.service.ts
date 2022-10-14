@@ -27,13 +27,13 @@ export class UsersService {
     ) { }
 
     async findById(id: number) {
-        console.log(typeof id);
         return this.usersRep.findOneBy({ id });
     }
 
     async create(createUserDto: CreateUserDto) {
         const { email } = createUserDto;
         const user = await this.usersRep.findOneBy({ email });
+        
         if (user) {
             throw new BadRequestException('email is in used');
         }
